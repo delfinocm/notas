@@ -515,16 +515,25 @@
           }).catch(err => console.log("Error envío Sheets nube: ", err));
         }
 
-        const blob = await (await fetch(imgData)).blob();
-        const file = new File([blob], `Nota_${folioStr}.png`, { type: "image/png" });
+        // SOLUCIÓN iOS: Conversión síncrona sin usar fetch()
+        const file = dataURLtoFile(imgData, `Nota_${folioStr}.png`);
 
+        // Verificamos compatibilidad nativa
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `Nota Venta ${folioStr}`,
-            text: `Comparto comprobante Nota de Venta Folio: ${folioStr}`
-          });
+          try {
+            await navigator.share({
+              files: [file],
+              title: `Nota Venta ${folioStr}`,
+              text: `Comparto comprobante Nota de Venta Folio: ${folioStr}`
+            });
+          } catch (shareError) {
+            // Si el usuario cancela o iOS lo bloquea por alguna otra razón, mostramos el Modal de respaldo
+            console.log("Compartir cancelado o bloqueado:", shareError);
+            document.getElementById('modal-img').src = imgData;
+            document.getElementById('modal-ios').style.display = 'flex';
+          }
         } else {
+          // Navegadores que no soportan compartir archivos nativamente
           document.getElementById('modal-img').src = imgData;
           document.getElementById('modal-ios').style.display = 'flex';
         }
@@ -532,6 +541,7 @@
         prepararNuevaVenta();
       } catch(err) {
         alert("Sucedió un percance al estructurar la imagen de la venta.");
+        console.error(err);
       } finally {
         // Restaurar placeholders y botones borrar
         inputs.forEach((inp, i) => { if(placeholders[i]) inp.setAttribute('placeholder', placeholders[i]); });
@@ -610,6 +620,18 @@
         container.style.display = 'none';
       }
     }
+	// Función para convertir Base64 a File instantáneamente
+function dataURLtoFile(dataurl, filename) {
+  let arr = dataurl.split(','),
+      mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]),
+      n = bstr.length,
+      u8arr = new Uint8Array(n);
+  while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, {type:mime});
+}
   </script>
 </body>
 </html>

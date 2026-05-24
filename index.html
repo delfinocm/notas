@@ -196,7 +196,7 @@
     <div id="tab-venta" class="tab-content">
       
       <label>Nombre del Comprador:</label>
-      <input type="text" id="venta-comprador" placeholder="Ej. Parroquia San Juan" oninput="actualizarComprador(event)">
+      <input type="text" id="venta-comprador" placeholder="Ej. Juan Pérez" oninput="actualizarComprador(event)">
       
       <div id="nota-contenedor">
         <div class="header-container">
@@ -398,7 +398,7 @@
       // Si es el segundo o más, agregamos el botón de basura rojo.
       div.innerHTML = `
         <div class="fila-concepto">
-          <input type="text" class="input-desc" placeholder="Concepto (Ej. Libro Legión)">
+          <input type="text" class="input-desc" placeholder="Concepto (Ej. Medallas)">
           ${!isFirst ? '<button class="btn-borrar" type="button" onclick="borrarFila(this)" title="Quitar producto">🗑️</button>' : ''}
         </div>
         <div class="fila-numeros">

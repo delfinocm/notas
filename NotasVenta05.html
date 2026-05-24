@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistema Control de Ventas</title>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  
+  <style>
+    /* DISEÑO ACCESIBLE DE ALTO CONTRASTE */
+    :root {
+      --bg-color: #f7f9fa;
+      --text-color: #111111;
+      --primary: #1976d2;
+      --success: #25D366;
+      --danger: #d32f2f;
+      --border: #666666;
+      --white: #ffffff;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 0;
+      font-size: 18px;
+    }
+
+    .view { display: none; padding: 15px; }
+    .view.active { display: block; }
+
+    .tab-bar {
+      display: flex; background: var(--white); border-bottom: 2px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .tab-btn {
+      flex: 1; padding: 18px; font-size: 19px; font-weight: bold; border: none;
+      background: none; border-bottom: 5px solid transparent; color: #444;
+    }
+    .tab-btn.active { border-bottom-color: var(--primary); color: var(--primary); }
+
+    h2 { font-size: 24px; margin-top: 0; }
+    label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 8px; font-size: 19px; }
+    
+    input[type="text"], input[type="date"] { 
+      width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--border); 
+      border-radius: 8px; box-sizing: border-box; background: var(--white);
+    }
+    input[type="file"] {
+      width: 100%; padding: 10px; font-size: 16px; border: 2px dashed var(--border);
+      border-radius: 8px; background: #eef2f5; margin-bottom: 15px;
+    }
+    input:focus { border-color: var(--primary); outline: none; }
+
+    button {
+      width: 100%; padding: 18px; font-size: 20px; font-weight: bold; border: none; 
+      border-radius: 8px; margin-top: 18px; color: var(--white); cursor: pointer;
+    }
+    .btn-primary { background: var(--primary); }
+    .btn-success { background: var(--success); }
+    .btn-secondary { background: #e0e0e0; color: var(--text-color); margin-top: 10px; }
+    .btn-danger { background: var(--danger); }
+    .btn-edit { background: #444; color: white; margin-top: 30px; font-size: 18px; padding: 15px;}
+
+    #canvas-firma { 
+      border: 3px dashed var(--border); background: var(--white); 
+      touch-action: none; width: 100%; height: 220px; border-radius: 8px; 
+    }
+
+    #nota-contenedor { 
+      background: var(--white); padding: 15px; border: 2px solid var(--text-color); 
+      border-radius: 8px; margin-top: 15px;
+    }
+
+    /* ENCABEZADO MEJORADO: Logo y Texto a la misma altura */
+    .header-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 3px solid #d32f2f;
+      padding-bottom: 12px;
+      margin-bottom: 15px;
+      gap: 15px;
+    }
+    .logo { 
+      height: 115px; /* Altura alineada al bloque de texto */
+      width: auto;
+      max-width: 130px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .header-text-block {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .txt-legion { color: #d32f2f; font-weight: bold; font-size: 22px; margin: 0; }
+    .txt-comitium { color: #1976d2; font-weight: bold; font-size: 16px; margin: 2px 0; }
+    .txt-nota { color: #d32f2f; font-weight: bold; font-size: 20px; margin: 2px 0; letter-spacing: 1px; }
+    .txt-folio { color: #000000; font-weight: bold; font-size: 17px; margin: 2px 0; }
+
+    /* NUEVO DISEÑO PARA LOS PRODUCTOS (IDEAL PARA CELULAR) */
+    .producto-item {
+      border: 2px solid #cccccc;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #fafafa;
+    }
+    .fila-concepto {
+      display: flex; gap: 10px; margin-bottom: 10px;
+    }
+    .fila-concepto input {
+      flex: 1; padding: 12px; font-weight: bold; border: 1px solid var(--border);
+    }
+    .btn-borrar {
+      width: auto; margin: 0; padding: 0 15px; background: #ff4d4d; color: white; 
+      font-size: 20px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .fila-numeros {
+      display: flex; gap: 10px; align-items: flex-end; justify-content: space-between;
+    }
+    .col-num { flex: 1; }
+    .col-num label, .col-importe label {
+      font-size: 15px; color: #555; display: block; margin-bottom: 4px; text-align: center; font-weight: bold;
+    }
+    .col-num input {
+      padding: 10px; width: 100%; border: 1px solid var(--border); text-align: center; font-size: 18px;
+    }
+    .col-importe { flex: 1; text-align: center; }
+    .td-importe {
+      font-size: 19px; font-weight: bold; color: var(--text-color); padding-bottom: 8px;
+    }
+
+    .total-box { font-size: 26px; font-weight: bold; text-align: right; color: var(--danger); margin: 15px 0; }
+    
+    .firma-box { 
+      text-align: center; margin-top: 12px; font-size: 15px; font-weight: bold;
+      border-top: 1px dashed var(--border); padding-top: 8px;
+    }
+    #display-firma { max-width: 130px; max-height: 45px; display: block; margin: 2px auto 0 auto; }
+
+    .cambio-box { 
+      background: #fff9c4; border: 3px solid #fbc02d; padding: 18px; 
+      border-radius: 8px; margin-top: 15px; text-align: center; 
+    }
+    .cambio-text { font-size: 24px; font-weight: bold; color: var(--danger); }
+
+    .historial-item { 
+      background: var(--white); padding: 16px; border: 2px solid var(--border); 
+      border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .preview-nota-img {
+      width: 100%; max-width: 380px; border: 2px solid #222; border-radius: 6px; margin-top: 12px;
+    }
+
+    #modal-ios { 
+      position: fixed; top:0; left:0; width:100%; height:100%; 
+      background: rgba(0,0,0,0.95); z-index: 1000; display: none; 
+      flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; 
+    }
+    #modal-ios img { max-width: 100%; max-height: 75%; border: 3px solid var(--white); border-radius: 6px; }
+    #modal-ios p { color: var(--white); font-size: 20px; text-align: center; font-weight: bold; margin-bottom: 20px;}
+    #modal-ios button { width: auto; padding: 15px 35px; background: var(--danger); }
+  </style>
+</head>
+<body onload="initApp()">
+
+  <div id="setup-view" class="view">
+    <h2>Configuración de Registro</h2>
+    <p style="font-size: 16px; color: #444;">Puedes actualizar tus datos en cualquier momento. Se guardarán en tu dispositivo.</p>
+    
+    <label>1. Tu Nombre Completo (Atendido por):</label>
+    <input type="text" id="setup-nombre" placeholder="Ej. Rosario Méndez">
+    
+    <label>2. Cargar Logo de la Legión (Opcional):</label>
+    <p style="font-size: 14px; margin-top: 0; color: #666;">Selecciona la imagen desde tu galería para que aparezca en el encabezado.</p>
+    <input type="file" id="setup-logo" accept="image/*">
+
+    <label>3. Dibuja tu firma aquí (Usa tu dedo):</label>
+    <canvas id="canvas-firma"></canvas>
+    <button class="btn-secondary" type="button" onclick="limpiarCanvas()">Limpiar Firma</button>
+    
+    <button class="btn-primary" onclick="procesarGuardadoPerfil()">Guardar Configuración</button>
+  </div>
+
+  <div id="app-view" class="view">
+    
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('venta')">Nueva Venta</button>
+      <button class="tab-btn" onclick="switchTab('historial')">Historial Notas</button>
+    </div>
+    
+    <div id="tab-venta" class="tab-content">
+      
+      <label>Nombre del Comprador:</label>
+      <input type="text" id="venta-comprador" placeholder="Ej. Parroquia San Juan" oninput="actualizarComprador(event)">
+      
+      <div id="nota-contenedor">
+        <div class="header-container">
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Logo" class="logo" id="nota-logo">
+          
+          <div class="header-text-block">
+            <div class="txt-legion">Legión de María</div>
+            <div class="txt-comitium">Comitium Nuestra Señora de Guadalupe</div>
+            <div class="txt-nota">NOTA DE VENTA</div>
+            <div class="txt-folio" id="display-folio">LM-000000-000000</div>
+          </div>
+        </div>
+        
+        <p style="margin: 4px 0; font-size: 16px;"><strong>Fecha y Hora:</strong> <span id="display-fecha"></span></p>
+        <p style="margin: 4px 0; font-size: 16px;"><strong>Cliente:</strong> <span id="display-comprador"></span></p>
+        
+        <div id="lista-productos-contenedor" style="margin-top: 15px;">
+          </div>
+        
+        <button class="btn-secondary" type="button" onclick="agregarFila()">+ Agregar Producto</button>
+        
+        <div class="total-box">Total: $<span id="display-total">0.00</span></div>
+        
+        <div class="firma-box">
+          <span id="display-atendido">Atendido por: </span>
+          <img id="display-firma" src="" alt="Firma Autorizada">
+        </div>
+      </div>
+      
+      <label>Importe Recibido ($):</label>
+      <input type="text" inputmode="decimal" id="venta-recibido" placeholder="0" oninput="validarCambioNumero(this)">
+      
+      <div id="cambio-container" class="cambio-box" style="display: none;">
+        <div class="cambio-text" id="display-cambio">Entregar cambio: $0.00</div>
+      </div>
+      
+      <button class="btn-success" id="btn-whatsapp" onclick="procesarVenta()">Guardar y Enviar por WhatsApp</button>
+      
+      <button class="btn-edit" onclick="editarPerfil()">⚙️ Cambiar Nombre, Firma o Logo</button>
+    </div>
+    
+    <div id="tab-historial" class="tab-content" style="display: none;">
+      <label>Filtrar Historial por Fecha:</label>
+      <input type="date" id="filtro-fecha" onchange="renderHistorial()">
+      <button class="btn-secondary" onclick="document.getElementById('filtro-fecha').value=''; renderHistorial();">Mostrar Todo el Historial</button>
+      
+      <div id="historial-lista" style="margin-top: 15px;"></div>
+      
+      <button class="btn-edit" onclick="editarPerfil()">⚙️ Cambiar Nombre, Firma o Logo</button>
+    </div>
+  </div>
+
+  <div id="modal-ios" onclick="this.style.display='none'">
+    <p>Mantén presionada la imagen para enviarla o guardarla en tus fotos.</p>
+    <img id="modal-img" src="" alt="Comprobante de venta generado">
+    <button style="margin-top: 20px;">Regresar a la aplicación</button>
+  </div>
+
+  <script>
+    let isDrawing = false;
+    let ctx;
+
+    function initApp() {
+      const nombre = localStorage.getItem('userNombre');
+      const firma = localStorage.getItem('userFirma');
+      const logo = localStorage.getItem('userLogo');
+      
+      if(nombre && firma) {
+        document.getElementById('setup-view').classList.remove('active');
+        document.getElementById('app-view').classList.add('active');
+        
+        document.getElementById('display-atendido').innerText = "Atendido por: " + nombre;
+        document.getElementById('display-firma').src = firma;
+        
+        if(logo) {
+          document.getElementById('nota-logo').src = logo;
+        }
+        
+        prepararNuevaVenta();
+      } else {
+        document.getElementById('setup-view').classList.add('active');
+        document.getElementById('app-view').classList.remove('active');
+        initCanvas();
+      }
+    }
+
+    function editarPerfil() {
+      document.getElementById('app-view').classList.remove('active');
+      document.getElementById('setup-view').classList.add('active');
+      document.getElementById('setup-nombre').value = localStorage.getItem('userNombre') || '';
+      document.getElementById('setup-logo').value = '';
+      if(ctx) { limpiarCanvas(); } else { initCanvas(); }
+    }
+
+    function initCanvas() {
+      const canvas = document.getElementById('canvas-firma');
+      ctx = canvas.getContext('2d');
+      
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#0000FF'; 
+
+      const obtenerPosicion = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+      };
+
+      const empezarDibujo = (e) => { e.preventDefault(); isDrawing = true; const pos = obtenerPosicion(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); };
+      const dibujar = (e) => { e.preventDefault(); if (!isDrawing) return; const pos = obtenerPosicion(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); };
+      const terminarDibujo = (e) => { e.preventDefault(); isDrawing = false; ctx.closePath(); };
+
+      canvas.addEventListener('mousedown', empezarDibujo);
+      canvas.addEventListener('mousemove', dibujar);
+      window.addEventListener('mouseup', terminarDibujo);
+      
+      canvas.addEventListener('touchstart', empezarDibujo, {passive: false});
+      canvas.addEventListener('touchmove', dibujar, {passive: false});
+      canvas.addEventListener('touchend', terminarDibujo, {passive: false});
+    }
+
+    function limpiarCanvas() {
+      if(ctx) { ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); }
+    }
+
+    function procesarGuardadoPerfil() {
+      const nombre = document.getElementById('setup-nombre').value.trim();
+      if(!nombre) { alert("Por favor, introduce tu nombre."); return; }
+      
+      const canvas = document.getElementById('canvas-firma');
+      const firmaData = canvas.toDataURL('image/png');
+      const logoInput = document.getElementById('setup-logo');
+      
+      if (logoInput.files && logoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          localStorage.setItem('userLogo', e.target.result);
+          guardarDatosFinales(nombre, firmaData);
+        };
+        reader.readAsDataURL(logoInput.files[0]);
+      } else {
+        guardarDatosFinales(nombre, firmaData);
+      }
+    }
+
+    function guardarDatosFinales(nombre, firma) {
+      localStorage.setItem('userNombre', nombre);
+      localStorage.setItem('userFirma', firma);
+      initApp();
+    }
+
+    function prepararNuevaVenta() {
+      document.getElementById('venta-comprador').value = '';
+      document.getElementById('display-comprador').innerText = '';
+      document.getElementById('lista-productos-contenedor').innerHTML = '';
+      document.getElementById('venta-recibido').value = '';
+      document.getElementById('cambio-container').style.display = 'none';
+      
+      generarFolioAutomatico();
+      agregarFila(); 
+      calcularTotal();
+    }
+
+    function generarFolioAutomatico() {
+      const d = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      
+      const DD = pad(d.getDate());
+      const MM = pad(d.getMonth() + 1);
+      const AA = d.getFullYear().toString().slice(-2);
+      const HH = pad(d.getHours());
+      const MIN = pad(d.getMinutes());
+      const SS = pad(d.getSeconds());
+      
+      document.getElementById('display-folio').innerText = `LM-${DD}${MM}${AA}-${HH}${MIN}${SS}`;
+      document.getElementById('display-fecha').innerText = `${DD}/${MM}/${d.getFullYear()} ${HH}:${MIN}:${SS}`;
+    }
+
+    function actualizarComprador(e) {
+      document.getElementById('display-comprador').innerText = e.target.value;
+    }
+
+    /* ----------------------------------------------------
+       LÓGICA DE AGREGAR Y BORRAR PRODUCTOS
+       ---------------------------------------------------- */
+    function agregarFila() {
+      const contenedor = document.getElementById('lista-productos-contenedor');
+      const isFirst = contenedor.children.length === 0;
+      
+      const div = document.createElement('div');
+      div.className = 'producto-item';
+      
+      // Si es el primer elemento, no pintamos botón de borrar. 
+      // Si es el segundo o más, agregamos el botón de basura rojo.
+      div.innerHTML = `
+        <div class="fila-concepto">
+          <input type="text" class="input-desc" placeholder="Concepto (Ej. Libro Legión)">
+          ${!isFirst ? '<button class="btn-borrar" type="button" onclick="borrarFila(this)" title="Quitar producto">🗑️</button>' : ''}
+        </div>
+        <div class="fila-numeros">
+          <div class="col-num">
+            <label>Cant.</label>
+            <input type="text" inputmode="decimal" class="input-cant" placeholder="0" oninput="validarNumero(this)">
+          </div>
+          <div class="col-num">
+            <label>Precio $</label>
+            <input type="text" inputmode="decimal" class="input-prec" placeholder="0.00" oninput="validarNumero(this)">
+          </div>
+          <div class="col-importe">
+            <label>Importe</label>
+            <div class="td-importe">$0.00</div>
+          </div>
+        </div>
+      `;
+      contenedor.appendChild(div);
+    }
+
+    function borrarFila(btn) {
+      btn.closest('.producto-item').remove();
+      calcularTotal();
+    }
+
+    /* ----------------------------------------------------
+       FILTRO ESTRICTO: SOLO NÚMEROS Y UN PUNTO DECIMAL
+       ---------------------------------------------------- */
+    function validarNumero(input) {
+      // Elimina cualquier caracter que no sea número o punto
+      input.value = input.value.replace(/[^0-9.]/g, '');
+      // Si hay más de un punto, elimina los extra
+      if((input.value.match(/\./g) || []).length > 1) {
+          input.value = input.value.substring(0, input.value.lastIndexOf('.'));
+      }
+      calcularTotal();
+    }
+
+    function validarCambioNumero(input) {
+      input.value = input.value.replace(/[^0-9.]/g, '');
+      if((input.value.match(/\./g) || []).length > 1) {
+          input.value = input.value.substring(0, input.value.lastIndexOf('.'));
+      }
+      calcularCambio();
+    }
+
+    function calcularTotal() {
+      let total = 0;
+      const filas = document.querySelectorAll('.producto-item');
+      filas.forEach(fila => {
+        const cant = parseFloat(fila.querySelector('.input-cant').value) || 0;
+        const prec = parseFloat(fila.querySelector('.input-prec').value) || 0;
+        const importe = cant * prec;
+        fila.querySelector('.td-importe').innerText = '$' + importe.toFixed(2);
+        total += importe;
+      });
+      document.getElementById('display-total').innerText = total.toFixed(2);
+      calcularCambio();
+    }
+
+    function calcularCambio() {
+      const total = parseFloat(document.getElementById('display-total').innerText) || 0;
+      const recibido = parseFloat(document.getElementById('venta-recibido').value) || 0;
+      const contenedor = document.getElementById('cambio-container');
+      
+      if (recibido > 0 && recibido >= total) {
+        contenedor.style.display = 'block';
+        document.getElementById('display-cambio').innerText = `Entregar cambio: $${(recibido - total).toFixed(2)}`;
+      } else {
+        contenedor.style.display = 'none';
+      }
+    }
+
+    async function procesarVenta() {
+      const btn = document.getElementById('btn-whatsapp');
+      const comprador = document.getElementById('venta-comprador').value.trim();
+      const totalVenta = document.getElementById('display-total').innerText;
+      
+      if(!comprador) { alert("Por favor escriba el nombre del comprador."); return; }
+      if(parseFloat(totalVenta) === 0) { alert("La nota no contiene productos válidos o los precios están en cero."); return; }
+
+      btn.innerText = "⏳ Generando Comprobante...";
+      btn.disabled = true;
+
+      // Ocultar botones de borrar momentáneamente para la foto
+      const botonesBorrar = document.querySelectorAll('.btn-borrar');
+      botonesBorrar.forEach(b => b.style.display = 'none');
+
+      const inputs = document.querySelectorAll('#lista-productos-contenedor input');
+      const placeholders = [];
+      inputs.forEach((inp, i) => {
+        inp.setAttribute('value', inp.value);
+        placeholders[i] = inp.getAttribute('placeholder');
+        inp.removeAttribute('placeholder');
+      });
+
+      const elemento = document.getElementById('nota-contenedor');
+      const folioStr = document.getElementById('display-folio').innerText;
+      const fechaStr = document.getElementById('display-fecha').innerText;
+      
+      try {
+        const canvasCaptura = await html2canvas(elemento, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+        const imgData = canvasCaptura.toDataURL('image/png');
+        
+        guardarEnHistorial(folioStr, fechaStr, comprador, totalVenta, imgData);
+        
+        const GOOGLE_APP_URL = "TU_URL_DE_APPS_SCRIPT_AQUI"; 
+        if(GOOGLE_APP_URL !== "TU_URL_DE_APPS_SCRIPT_AQUI") {
+          fetch(GOOGLE_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ folio: folioStr, fecha: fechaStr, comprador: comprador, total: totalVenta })
+          }).catch(err => console.log("Error envío Sheets nube: ", err));
+        }
+
+        const blob = await (await fetch(imgData)).blob();
+        const file = new File([blob], `Nota_${folioStr}.png`, { type: "image/png" });
+
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Nota Venta ${folioStr}`,
+            text: `Comparto comprobante Nota de Venta Folio: ${folioStr}`
+          });
+        } else {
+          document.getElementById('modal-img').src = imgData;
+          document.getElementById('modal-ios').style.display = 'flex';
+        }
+        
+        prepararNuevaVenta();
+      } catch(err) {
+        alert("Sucedió un percance al estructurar la imagen de la venta.");
+      } finally {
+        // Restaurar placeholders y botones borrar
+        inputs.forEach((inp, i) => { if(placeholders[i]) inp.setAttribute('placeholder', placeholders[i]); });
+        botonesBorrar.forEach(b => b.style.display = 'flex');
+        
+        btn.innerText = "Guardar y Enviar por WhatsApp";
+        btn.disabled = false;
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      
+      if(tabId === 'venta') {
+        document.getElementById('tab-venta').style.display = 'block';
+        document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+      } else {
+        document.getElementById('tab-historial').style.display = 'block';
+        document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+        renderHistorial();
+      }
+    }
+
+    function guardarEnHistorial(folio, fecha, comprador, total, imgData) {
+      let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
+      historial.unshift({ folio, fecha, comprador, total, imgData, isoDate: new Date().toISOString() });
+      localStorage.setItem('historialVentasImg', JSON.stringify(historial));
+    }
+
+    function renderHistorial() {
+      const filtro = document.getElementById('filtro-fecha').value; 
+      let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
+      const lista = document.getElementById('historial-lista');
+      lista.innerHTML = '';
+      
+      historial.forEach((venta, index) => {
+        if (filtro) {
+          const d = new Date(venta.isoDate);
+          const pad = n => n.toString().padStart(2, '0');
+          const ymd = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+          if (ymd !== filtro) return;
+        }
+        
+        lista.innerHTML += `
+          <div class="historial-item">
+            <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+              <strong style="color:var(--danger); font-size:18px;">${venta.folio}</strong>
+              <span style="color:#555; font-size:15px;">${venta.fecha}</span>
+            </div>
+            <div style="font-size: 17px;"><strong>Comprador:</strong> ${venta.comprador}</div>
+            <div style="font-size: 20px; font-weight:bold; color:var(--primary); margin: 6px 0 0 0;">Total: $${venta.total}</div>
+            
+            <button class="btn-secondary" style="padding:10px; font-size:16px; margin-top:12px;" onclick="toggleImagenNota(${index})">
+               👁️ Mostrar / Ocultar Nota Completa
+            </button>
+            
+            <div id="container-img-${index}" style="display:none; text-align:center; margin-top:10px;">
+               <p style="font-size:14px; margin:4px; color:#555;">Imagen exacta enviada por WhatsApp:</p>
+               <img src="${venta.imgData}" class="preview-nota-img" alt="Nota de venta completa">
+            </div>
+          </div>
+        `;
+      });
+      
+      if(lista.innerHTML === '') {
+        lista.innerHTML = '<p style="text-align:center; color:#555; margin-top:30px;">Ninguna venta localizada para los criterios.</p>';
+      }
+    }
+
+    function toggleImagenNota(index) {
+      const container = document.getElementById(`container-img-${index}`);
+      if(container.style.display === 'none') {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

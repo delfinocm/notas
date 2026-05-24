@@ -47,10 +47,6 @@
       width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--border); 
       border-radius: 8px; box-sizing: border-box; background: var(--white);
     }
-    input[type="file"] {
-      width: 100%; padding: 10px; font-size: 16px; border: 2px dashed var(--border);
-      border-radius: 8px; background: #eef2f5; margin-bottom: 15px;
-    }
     input:focus { border-color: var(--primary); outline: none; }
 
     button {
@@ -73,7 +69,7 @@
       border-radius: 8px; margin-top: 15px;
     }
 
-    /* ENCABEZADO MEJORADO: Logo y Texto a la misma altura */
+    /* ENCABEZADO MEJORADO */
     .header-container {
       display: flex;
       align-items: center;
@@ -84,7 +80,7 @@
       gap: 15px;
     }
     .logo { 
-      height: 115px; /* Altura alineada al bloque de texto */
+      height: 115px;
       width: auto;
       max-width: 130px;
       object-fit: contain;
@@ -101,7 +97,7 @@
     .txt-nota { color: #d32f2f; font-weight: bold; font-size: 20px; margin: 2px 0; letter-spacing: 1px; }
     .txt-folio { color: #000000; font-weight: bold; font-size: 17px; margin: 2px 0; }
 
-    /* NUEVO DISEÑO PARA LOS PRODUCTOS (IDEAL PARA CELULAR) */
+    /* NUEVO DISEÑO PARA LOS PRODUCTOS */
     .producto-item {
       border: 2px solid #cccccc;
       border-radius: 8px;
@@ -156,30 +152,27 @@
       width: 100%; max-width: 380px; border: 2px solid #222; border-radius: 6px; margin-top: 12px;
     }
 
+    /* MODAL ACTUALIZADO PARA ESTRATEGIA IOS */
     #modal-ios { 
       position: fixed; top:0; left:0; width:100%; height:100%; 
       background: rgba(0,0,0,0.95); z-index: 1000; display: none; 
       flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; 
     }
-    #modal-ios img { max-width: 100%; max-height: 75%; border: 3px solid var(--white); border-radius: 6px; }
-    #modal-ios p { color: var(--white); font-size: 20px; text-align: center; font-weight: bold; margin-bottom: 20px;}
-    #modal-ios button { width: auto; padding: 15px 35px; background: var(--danger); }
+    #modal-ios img { max-width: 100%; max-height: 60%; border: 3px solid var(--white); border-radius: 6px; margin-bottom: 15px;}
+    #modal-ios p { color: var(--white); font-size: 16px; text-align: center; margin-bottom: 10px;}
+    .botones-modal { display: flex; gap: 10px; width: 100%; max-width: 400px; }
   </style>
 </head>
 <body onload="initApp()">
 
   <div id="setup-view" class="view">
-    <h2>Configuración de Registro</h2>
-    <p style="font-size: 16px; color: #444;">Puedes actualizar tus datos en cualquier momento. Se guardarán en tu dispositivo.</p>
+    <h2>Configuración Inicial</h2>
+    <p style="font-size: 16px; color: #444;">Puedes actualizar estos datos en cualquier momento.</p>
     
     <label>1. Tu Nombre Completo (Atendido por):</label>
     <input type="text" id="setup-nombre" placeholder="Ej. Rosario Méndez">
     
-    <label>2. Cargar Logo de la Legión (Opcional):</label>
-    <p style="font-size: 14px; margin-top: 0; color: #666;">Selecciona la imagen desde tu galería para que aparezca en el encabezado.</p>
-    <input type="file" id="setup-logo" accept="image/*">
-
-    <label>3. Dibuja tu firma aquí (Usa tu dedo):</label>
+    <label>2. Dibuja tu firma aquí (Usa tu dedo):</label>
     <canvas id="canvas-firma"></canvas>
     <button class="btn-secondary" type="button" onclick="limpiarCanvas()">Limpiar Firma</button>
     
@@ -200,7 +193,7 @@
       
       <div id="nota-contenedor">
         <div class="header-container">
-          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="Logo" class="logo" id="nota-logo">
+          <img src="Vexillum.jpg" alt="Logo" class="logo" id="nota-logo">
           
           <div class="header-text-block">
             <div class="txt-legion">Legión de María</div>
@@ -213,8 +206,7 @@
         <p style="margin: 4px 0; font-size: 16px;"><strong>Fecha y Hora:</strong> <span id="display-fecha"></span></p>
         <p style="margin: 4px 0; font-size: 16px;"><strong>Cliente:</strong> <span id="display-comprador"></span></p>
         
-        <div id="lista-productos-contenedor" style="margin-top: 15px;">
-          </div>
+        <div id="lista-productos-contenedor" style="margin-top: 15px;"></div>
         
         <button class="btn-secondary" type="button" onclick="agregarFila()">+ Agregar Producto</button>
         
@@ -233,9 +225,9 @@
         <div class="cambio-text" id="display-cambio">Entregar cambio: $0.00</div>
       </div>
       
-      <button class="btn-success" id="btn-whatsapp" onclick="procesarVenta()">Guardar y Enviar por WhatsApp</button>
+      <button class="btn-success" id="btn-whatsapp" onclick="procesarVenta()">Generar Nota</button>
       
-      <button class="btn-edit" onclick="editarPerfil()">⚙️ Cambiar Nombre, Firma o Logo</button>
+      <button class="btn-edit" onclick="editarPerfil()">⚙️ Cambiar Nombre o Firma</button>
     </div>
     
     <div id="tab-historial" class="tab-content" style="display: none;">
@@ -245,24 +237,28 @@
       
       <div id="historial-lista" style="margin-top: 15px;"></div>
       
-      <button class="btn-edit" onclick="editarPerfil()">⚙️ Cambiar Nombre, Firma o Logo</button>
+      <button class="btn-edit" onclick="editarPerfil()">⚙️ Cambiar Nombre o Firma</button>
     </div>
   </div>
 
-  <div id="modal-ios" onclick="this.style.display='none'">
-    <p>Mantén presionada la imagen para enviarla o guardarla en tus fotos.</p>
+  <div id="modal-ios">
+    <p style="font-weight: bold; font-size: 20px;">¡Comprobante Listo!</p>
     <img id="modal-img" src="" alt="Comprobante de venta generado">
-    <button style="margin-top: 20px;">Regresar a la aplicación</button>
+    <p>En iOS presiona "Compartir". Si falla, mantén presionada la imagen para guardarla en tus fotos.</p>
+    <div class="botones-modal">
+      <button id="btn-modal-compartir" class="btn-success" style="margin-top: 0;">📤 Compartir</button>
+      <button class="btn-danger" style="margin-top: 0;" onclick="cerrarModal()">Cerrar</button>
+    </div>
   </div>
 
   <script>
     let isDrawing = false;
     let ctx;
+    let archivoParaCompartir = null; // Variable global para la estrategia iOS
 
     function initApp() {
       const nombre = localStorage.getItem('userNombre');
       const firma = localStorage.getItem('userFirma');
-      const logo = localStorage.getItem('userLogo');
       
       if(nombre && firma) {
         document.getElementById('setup-view').classList.remove('active');
@@ -270,10 +266,6 @@
         
         document.getElementById('display-atendido').innerText = "Atendido por: " + nombre;
         document.getElementById('display-firma').src = firma;
-        
-        if(logo) {
-          document.getElementById('nota-logo').src = logo;
-        }
         
         prepararNuevaVenta();
       } else {
@@ -287,7 +279,6 @@
       document.getElementById('app-view').classList.remove('active');
       document.getElementById('setup-view').classList.add('active');
       document.getElementById('setup-nombre').value = localStorage.getItem('userNombre') || '';
-      document.getElementById('setup-logo').value = '';
       if(ctx) { limpiarCanvas(); } else { initCanvas(); }
     }
 
@@ -333,23 +324,9 @@
       
       const canvas = document.getElementById('canvas-firma');
       const firmaData = canvas.toDataURL('image/png');
-      const logoInput = document.getElementById('setup-logo');
       
-      if (logoInput.files && logoInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          localStorage.setItem('userLogo', e.target.result);
-          guardarDatosFinales(nombre, firmaData);
-        };
-        reader.readAsDataURL(logoInput.files[0]);
-      } else {
-        guardarDatosFinales(nombre, firmaData);
-      }
-    }
-
-    function guardarDatosFinales(nombre, firma) {
       localStorage.setItem('userNombre', nombre);
-      localStorage.setItem('userFirma', firma);
+      localStorage.setItem('userFirma', firmaData);
       initApp();
     }
 
@@ -384,9 +361,6 @@
       document.getElementById('display-comprador').innerText = e.target.value;
     }
 
-    /* ----------------------------------------------------
-       LÓGICA DE AGREGAR Y BORRAR PRODUCTOS
-       ---------------------------------------------------- */
     function agregarFila() {
       const contenedor = document.getElementById('lista-productos-contenedor');
       const isFirst = contenedor.children.length === 0;
@@ -394,8 +368,6 @@
       const div = document.createElement('div');
       div.className = 'producto-item';
       
-      // Si es el primer elemento, no pintamos botón de borrar. 
-      // Si es el segundo o más, agregamos el botón de basura rojo.
       div.innerHTML = `
         <div class="fila-concepto">
           <input type="text" class="input-desc" placeholder="Concepto (Ej. Medallas)">
@@ -424,13 +396,8 @@
       calcularTotal();
     }
 
-    /* ----------------------------------------------------
-       FILTRO ESTRICTO: SOLO NÚMEROS Y UN PUNTO DECIMAL
-       ---------------------------------------------------- */
     function validarNumero(input) {
-      // Elimina cualquier caracter que no sea número o punto
       input.value = input.value.replace(/[^0-9.]/g, '');
-      // Si hay más de un punto, elimina los extra
       if((input.value.match(/\./g) || []).length > 1) {
           input.value = input.value.substring(0, input.value.lastIndexOf('.'));
       }
@@ -483,7 +450,6 @@
       btn.innerText = "⏳ Generando Comprobante...";
       btn.disabled = true;
 
-      // Ocultar botones de borrar momentáneamente para la foto
       const botonesBorrar = document.querySelectorAll('.btn-borrar');
       botonesBorrar.forEach(b => b.style.display = 'none');
 
@@ -500,52 +466,58 @@
       const fechaStr = document.getElementById('display-fecha').innerText;
       
       try {
-        // SOLUCIÓN 1: Bajar scale a 2. Sigue siendo súper nítido, pero no satura la memoria de iOS.
         const canvasCaptura = await html2canvas(elemento, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
         const imgData = canvasCaptura.toDataURL('image/png');
         
         guardarEnHistorial(folioStr, fechaStr, comprador, totalVenta, imgData);
         
-        const GOOGLE_APP_URL = "TU_URL_DE_APPS_SCRIPT_AQUI"; 
-        if(GOOGLE_APP_URL !== "TU_URL_DE_APPS_SCRIPT_AQUI") {
-          fetch(GOOGLE_APP_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ folio: folioStr, fecha: fechaStr, comprador: comprador, total: totalVenta })
-          }).catch(err => console.log("Error envío Sheets nube: ", err));
-        }
-
-        const file = dataURLtoFile(imgData, `Nota_${folioStr}.png`);
-
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            // SOLUCIÓN 2: Enviar SOLO el archivo. Evita conflictos internos de WhatsApp en iOS.
-            await navigator.share({
-              files: [file]
-            });
-          } catch (shareError) {
-            console.log("Compartir cancelado o bloqueado:", shareError);
+        // Convertir el canvas a Blob directamente (Más compatible que el método anterior)
+        canvasCaptura.toBlob((blob) => {
+            archivoParaCompartir = new File([blob], `Nota_${folioStr}.png`, { type: 'image/png' });
+            
+            // Mostrar modal inmediatamente para habilitar la estrategia iOS
             document.getElementById('modal-img').src = imgData;
             document.getElementById('modal-ios').style.display = 'flex';
-          }
-        } else {
-          document.getElementById('modal-img').src = imgData;
-          document.getElementById('modal-ios').style.display = 'flex';
-        }
-        
-        prepararNuevaVenta();
+            
+            // Si el navegador no soporta share, ocultar botón en el modal
+            if (!(navigator.share && navigator.canShare && navigator.canShare({ files: [archivoParaCompartir] }))) {
+                document.getElementById('btn-modal-compartir').style.display = 'none';
+            } else {
+                document.getElementById('btn-modal-compartir').style.display = 'block';
+            }
+            
+            prepararNuevaVenta();
+        }, 'image/png');
+
       } catch(err) {
         alert("Sucedió un percance al estructurar la imagen de la venta.");
         console.error(err);
       } finally {
-        // Restaurar placeholders y botones borrar
         inputs.forEach((inp, i) => { if(placeholders[i]) inp.setAttribute('placeholder', placeholders[i]); });
         botonesBorrar.forEach(b => b.style.display = 'flex');
         
-        btn.innerText = "Guardar y Enviar por WhatsApp";
+        btn.innerText = "Generar Nota";
         btn.disabled = false;
       }
+    }
+
+    // ACCIÓN DIRECTA DEL USUARIO (Evita bloqueos de seguridad en iOS)
+    document.getElementById('btn-modal-compartir').addEventListener('click', async () => {
+        if (archivoParaCompartir && navigator.share) {
+            try {
+                await navigator.share({
+                    files: [archivoParaCompartir],
+                    title: 'Nota de Venta',
+                    text: 'Te envío la nota de tu compra.'
+                });
+            } catch (shareError) {
+                console.log("Compartir cancelado o bloqueado:", shareError);
+            }
+        }
+    });
+
+    function cerrarModal() {
+        document.getElementById('modal-ios').style.display = 'none';
     }
 
     function switchTab(tabId) {
@@ -564,39 +536,19 @@
 
     function guardarEnHistorial(folio, fecha, comprador, total, imgData) {
       let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
-      
-      // Agregamos la nueva venta al inicio
       historial.unshift({ folio, fecha, comprador, total, imgData, isoDate: new Date().toISOString() });
-      
-      // Límite de seguridad: Solo guardamos las últimas 10 notas
-      if (historial.length > 10) {
-        historial = historial.slice(0, 10);
-      }
+      if (historial.length > 10) historial = historial.slice(0, 10);
       
       try {
-        // Intento 1: Guardar normal (con imágenes)
         localStorage.setItem('historialVentasImg', JSON.stringify(historial));
       } catch(e) {
-        // Intento 2: Reducir a 3 notas si la memoria está casi llena
-        console.warn("Memoria casi llena. Reduciendo tamaño del historial...");
         if(historial.length > 3) {
             historial = historial.slice(0, 3);
-            try {
-                localStorage.setItem('historialVentasImg', JSON.stringify(historial));
-            } catch(e2) {
-                // Intento 3 (EL NUEVO PLAN DE EMERGENCIA): Guardar solo el texto sin imágenes
-                console.warn("Memoria totalmente llena. Guardando historial SIN imágenes para no perder el registro.");
-                
-                // Creamos una copia del historial pero vaciamos la imagen de cada nota
-                let historialSinImagenes = historial.map(venta => {
-                    return { folio: venta.folio, fecha: venta.fecha, comprador: venta.comprador, total: venta.total, imgData: "", isoDate: venta.isoDate };
-                });
-                
-                try {
-                    localStorage.setItem('historialVentasImg', JSON.stringify(historialSinImagenes));
-                } catch(e3) {
-                    console.error("Error crítico: No se pudo guardar ni siquiera el texto.");
-                }
+            try { localStorage.setItem('historialVentasImg', JSON.stringify(historial)); } 
+            catch(e2) {
+                let historialSinImagenes = historial.map(venta => ({...venta, imgData: ""}));
+                try { localStorage.setItem('historialVentasImg', JSON.stringify(historialSinImagenes)); } 
+                catch(e3) { console.error("Error crítico."); }
             }
         }
       }
@@ -630,7 +582,6 @@
             </button>
             
             <div id="container-img-${index}" style="display:none; text-align:center; margin-top:10px;">
-               <p style="font-size:14px; margin:4px; color:#555;">Imagen exacta enviada por WhatsApp:</p>
                <img src="${venta.imgData}" class="preview-nota-img" alt="Nota de venta completa">
             </div>
           </div>
@@ -644,24 +595,8 @@
 
     function toggleImagenNota(index) {
       const container = document.getElementById(`container-img-${index}`);
-      if(container.style.display === 'none') {
-        container.style.display = 'block';
-      } else {
-        container.style.display = 'none';
-      }
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
     }
-	// Función para convertir Base64 a File instantáneamente
-function dataURLtoFile(dataurl, filename) {
-  let arr = dataurl.split(','),
-      mime = arr[0].match(/:(.*?);/)[1],
-      bstr = atob(arr[1]),
-      n = bstr.length,
-      u8arr = new Uint8Array(n);
-  while(n--){
-      u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, {type:mime});
-}
   </script>
 </body>
 </html>

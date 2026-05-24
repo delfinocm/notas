@@ -568,24 +568,35 @@
       // Agregamos la nueva venta al inicio
       historial.unshift({ folio, fecha, comprador, total, imgData, isoDate: new Date().toISOString() });
       
-      // SOLUCIÓN: Límite de seguridad. Solo guardamos las últimas 10 notas para no llenar la memoria del iPhone.
+      // Límite de seguridad: Solo guardamos las últimas 10 notas
       if (historial.length > 10) {
         historial = historial.slice(0, 10);
       }
       
       try {
-        // Intentamos guardar en la memoria del teléfono
+        // Intento 1: Guardar normal (con imágenes)
         localStorage.setItem('historialVentasImg', JSON.stringify(historial));
       } catch(e) {
-        // Si el iPhone rechaza el guardado por falta de espacio, reducimos drásticamente a las últimas 3 e intentamos de nuevo
+        // Intento 2: Reducir a 3 notas si la memoria está casi llena
         console.warn("Memoria casi llena. Reduciendo tamaño del historial...");
         if(historial.length > 3) {
             historial = historial.slice(0, 3);
             try {
                 localStorage.setItem('historialVentasImg', JSON.stringify(historial));
             } catch(e2) {
-                // Si aún así falla, evitamos que la aplicación se congele para que el WhatsApp siga funcionando.
-                console.error("Memoria totalmente llena. No se pudo guardar la imagen en el historial.");
+                // Intento 3 (EL NUEVO PLAN DE EMERGENCIA): Guardar solo el texto sin imágenes
+                console.warn("Memoria totalmente llena. Guardando historial SIN imágenes para no perder el registro.");
+                
+                // Creamos una copia del historial pero vaciamos la imagen de cada nota
+                let historialSinImagenes = historial.map(venta => {
+                    return { folio: venta.folio, fecha: venta.fecha, comprador: venta.comprador, total: venta.total, imgData: "", isoDate: venta.isoDate };
+                });
+                
+                try {
+                    localStorage.setItem('historialVentasImg', JSON.stringify(historialSinImagenes));
+                } catch(e3) {
+                    console.error("Error crítico: No se pudo guardar ni siquiera el texto.");
+                }
             }
         }
       }

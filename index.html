@@ -500,7 +500,8 @@
       const fechaStr = document.getElementById('display-fecha').innerText;
       
       try {
-        const canvasCaptura = await html2canvas(elemento, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+        // SOLUCIÓN 1: Bajar scale a 2. Sigue siendo súper nítido, pero no satura la memoria de iOS.
+        const canvasCaptura = await html2canvas(elemento, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
         const imgData = canvasCaptura.toDataURL('image/png');
         
         guardarEnHistorial(folioStr, fechaStr, comprador, totalVenta, imgData);
@@ -515,25 +516,20 @@
           }).catch(err => console.log("Error envío Sheets nube: ", err));
         }
 
-        // SOLUCIÓN iOS: Conversión síncrona sin usar fetch()
         const file = dataURLtoFile(imgData, `Nota_${folioStr}.png`);
 
-        // Verificamos compatibilidad nativa
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
+            // SOLUCIÓN 2: Enviar SOLO el archivo. Evita conflictos internos de WhatsApp en iOS.
             await navigator.share({
-              files: [file],
-              title: `Nota Venta ${folioStr}`,
-              text: `Comparto comprobante Nota de Venta Folio: ${folioStr}`
+              files: [file]
             });
           } catch (shareError) {
-            // Si el usuario cancela o iOS lo bloquea por alguna otra razón, mostramos el Modal de respaldo
             console.log("Compartir cancelado o bloqueado:", shareError);
             document.getElementById('modal-img').src = imgData;
             document.getElementById('modal-ios').style.display = 'flex';
           }
         } else {
-          // Navegadores que no soportan compartir archivos nativamente
           document.getElementById('modal-img').src = imgData;
           document.getElementById('modal-ios').style.display = 'flex';
         }

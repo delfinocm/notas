@@ -76,9 +76,6 @@
 
     .historial-item { background: var(--white); padding: 16px; border: 2px solid var(--border); border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
     .preview-nota-img { width: 100%; max-width: 380px; border: 2px solid #222; border-radius: 6px; margin-top: 12px; }
-
-    /* AVISO MEMORIA */
-    .alerta-memoria { background: #ffebee; border: 2px solid var(--danger); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; color: var(--danger); font-weight: bold; display: none;}
     
     /* MODAL IOS */
     #modal-ios { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
@@ -86,7 +83,11 @@
     #modal-ios p { color: var(--white); font-size: 16px; text-align: center; margin-bottom: 10px;}
     .botones-modal { display: flex; gap: 10px; width: 100%; max-width: 400px; }
     
-    .flex-row { display: flex; gap: 10px; align-items: flex-end; }
+    /* SOLUCIÓN AL PROBLEMA DE IPHONE (min-width: 0 y box-sizing) */
+    .flex-row { display: flex; gap: 10px; align-items: flex-end; width: 100%; box-sizing: border-box; }
+    .flex-row > div { flex: 1; min-width: 0; }
+    .flex-row input[type="date"] { width: 100%; box-sizing: border-box; min-width: 0; }
+    
     .box-reporte { background: #e3f2fd; border: 2px solid #1976d2; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center; }
   </style>
 </head>
@@ -112,7 +113,6 @@
       <button class="tab-btn" onclick="switchTab('reportes')">Reportes</button>
     </div>
     
-    <!-- PESTAÑA 1: VENTA -->
     <div id="tab-venta" class="tab-content">
       <label>Nombre del Comprador:</label>
       <input type="text" id="venta-comprador" placeholder="Ej. Juan Pérez" oninput="actualizarComprador(event)">
@@ -145,34 +145,33 @@
       <button class="btn-edit" onclick="editarPerfil()">⚙️ Editar Perfil o Firma</button>
     </div>
     
-    <!-- PESTAÑA 2: HISTORIAL -->
     <div id="tab-historial" class="tab-content" style="display: none;">
-      <div id="alerta-memoria" class="alerta-memoria">⚠️ Memoria casi llena. Por favor exporta a Excel y luego borra notas antiguas.</div>
       
       <button class="btn-success" style="margin-bottom: 15px;" onclick="exportarExcel()">📊 Exportar Todo a Excel</button>
       
       <div style="background: #f0f0f0; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
         <h3 style="font-size: 16px; margin-bottom: 5px;">Eliminar por Fechas:</h3>
         <div class="flex-row">
-            <div style="flex:1"><label style="margin-top:0; font-size:14px;">Desde:</label><input type="date" id="borrar-desde"></div>
-            <div style="flex:1"><label style="margin-top:0; font-size:14px;">Hasta:</label><input type="date" id="borrar-hasta"></div>
+            <div><label style="margin-top:0; font-size:14px;">Desde:</label><input type="date" id="borrar-desde"></div>
+            <div><label style="margin-top:0; font-size:14px;">Hasta:</label><input type="date" id="borrar-hasta"></div>
         </div>
         <button class="btn-danger btn-small" onclick="borrarRangoFechas()">🗑️ Borrar Rango</button>
       </div>
 
       <label>Ver notas del día:</label>
-      <input type="date" id="filtro-fecha" onchange="renderHistorial()">
+      <div class="flex-row">
+        <input type="date" id="filtro-fecha" onchange="renderHistorial()">
+      </div>
       <button class="btn-secondary btn-small" onclick="document.getElementById('filtro-fecha').value=''; renderHistorial();">Ver Todo</button>
       
       <div id="historial-lista" style="margin-top: 15px;"></div>
     </div>
 
-    <!-- PESTAÑA 3: REPORTES -->
     <div id="tab-reportes" class="tab-content" style="display: none;">
         <h2>Reporte de Ventas</h2>
         <div class="flex-row">
-            <div style="flex:1"><label style="margin-top:0; font-size:14px;">Desde:</label><input type="date" id="rep-desde"></div>
-            <div style="flex:1"><label style="margin-top:0; font-size:14px;">Hasta:</label><input type="date" id="rep-hasta"></div>
+            <div><label style="margin-top:0; font-size:14px;">Desde:</label><input type="date" id="rep-desde"></div>
+            <div><label style="margin-top:0; font-size:14px;">Hasta:</label><input type="date" id="rep-hasta"></div>
         </div>
         <button class="btn-primary" onclick="generarReporte()">Generar Reporte</button>
 
@@ -197,9 +196,76 @@
   </div>
 
   <script>
+    // --- REGISTRO DEL SERVICE WORKER (PWA Offline) ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+          console.log('Service Worker registrado correctamente.', reg);
+        }).catch(err => {
+          console.log('Fallo al registrar el Service Worker.', err);
+        });
+      });
+    }
+
+    // --- BASE DE DATOS: INDEXED DB ---
+    const dbHelper = {
+        dbName: 'LegionVentasDB',
+        dbVersion: 1,
+        storeName: 'historial',
+        db: null,
+        init: function() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(this.dbName, this.dbVersion);
+                request.onupgradeneeded = (e) => {
+                    let db = e.target.result;
+                    if (!db.objectStoreNames.contains(this.storeName)) {
+                        db.createObjectStore(this.storeName, { keyPath: 'isoDate' });
+                    }
+                };
+                request.onsuccess = (e) => { this.db = e.target.result; resolve(this.db); };
+                request.onerror = (e) => { reject(e.target.error); };
+            });
+        },
+        getAll: function() {
+            return new Promise((resolve, reject) => {
+                let tx = this.db.transaction(this.storeName, 'readonly');
+                let store = tx.objectStore(this.storeName);
+                let request = store.getAll();
+                request.onsuccess = () => {
+                    // Ordenar del más nuevo al más viejo
+                    let resultados = request.result.sort((a,b) => new Date(b.isoDate) - new Date(a.isoDate));
+                    resolve(resultados);
+                };
+                request.onerror = () => reject(request.error);
+            });
+        },
+        save: function(venta) {
+            return new Promise((resolve, reject) => {
+                let tx = this.db.transaction(this.storeName, 'readwrite');
+                let store = tx.objectStore(this.storeName);
+                let request = store.put(venta);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        },
+        delete: function(isoDate) {
+            return new Promise((resolve, reject) => {
+                let tx = this.db.transaction(this.storeName, 'readwrite');
+                let store = tx.objectStore(this.storeName);
+                let request = store.delete(isoDate);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+    };
+
     let isDrawing = false; let ctx; let archivoParaCompartir = null; 
 
-    function initApp() {
+    async function initApp() {
+      // Inicializar Base de Datos
+      await dbHelper.init();
+      await migrarLocalStorage(); // Migra datos antiguos si existen
+
       const grupo = localStorage.getItem('userGrupo') || "Comitium Nuestra Señora de Guadalupe";
       const nombre = localStorage.getItem('userNombre');
       const firma = localStorage.getItem('userFirma');
@@ -211,7 +277,6 @@
         document.getElementById('display-atendido').innerText = "Atendido por: " + nombre;
         document.getElementById('display-firma').src = firma;
         prepararNuevaVenta();
-        checarMemoria();
       } else {
         document.getElementById('setup-view').classList.add('active');
         document.getElementById('app-view').classList.remove('active');
@@ -220,13 +285,15 @@
       }
     }
 
-    function checarMemoria() {
-        let storageString = JSON.stringify(localStorage);
-        // localStorage tiene un límite aprox de 5MB. Advertimos al 80% (aprox 4MB o 4,000,000 caracteres)
-        if(storageString.length > 4000000) {
-            document.getElementById('alerta-memoria').style.display = 'block';
-        } else {
-            document.getElementById('alerta-memoria').style.display = 'none';
+    async function migrarLocalStorage() {
+        let historialAntiguo = localStorage.getItem('historialVentasImg');
+        if(historialAntiguo) {
+            let parsed = JSON.parse(historialAntiguo);
+            for(let venta of parsed) {
+                await dbHelper.save(venta);
+            }
+            localStorage.removeItem('historialVentasImg');
+            console.log("Migración de datos a IndexedDB completada.");
         }
     }
 
@@ -323,7 +390,6 @@
       if(!comprador) { alert("Escriba el nombre del comprador."); return; }
       if(parseFloat(totalVenta) === 0) { alert("La nota no tiene productos válidos."); return; }
 
-      // Extraer datos de productos para el Excel/Historial
       const productosVendidos = [];
       document.querySelectorAll('.producto-item').forEach(fila => {
           const desc = fila.querySelector('.input-desc').value.trim() || 'Sin concepto';
@@ -342,15 +408,15 @@
         const imgData = canvasCaptura.toDataURL('image/png');
         const folioStr = document.getElementById('display-folio').innerText;
         
-        guardarEnHistorial(folioStr, document.getElementById('display-fecha').innerText, comprador, totalVenta, imgData, productosVendidos);
+        await guardarEnHistorial(folioStr, document.getElementById('display-fecha').innerText, comprador, totalVenta, imgData, productosVendidos);
         
         canvasCaptura.toBlob((blob) => {
             archivoParaCompartir = new File([blob], `Nota_${folioStr}.png`, { type: 'image/png' });
             document.getElementById('modal-img').src = imgData; document.getElementById('modal-ios').style.display = 'flex';
             document.getElementById('btn-modal-compartir').style.display = (navigator.share && navigator.canShare && navigator.canShare({ files: [archivoParaCompartir] })) ? 'block' : 'none';
-            prepararNuevaVenta(); checarMemoria();
+            prepararNuevaVenta();
         }, 'image/png');
-      } catch(err) { alert("Error al crear la imagen."); } 
+      } catch(err) { alert("Error al crear la imagen."); console.log(err); } 
       finally {
         inputs.forEach((inp, i) => { if(placeholders[i]) inp.setAttribute('placeholder', placeholders[i]); });
         document.querySelectorAll('.btn-borrar').forEach(b => b.style.display = 'flex'); btn.innerText = "Generar Nota"; btn.disabled = false;
@@ -372,29 +438,28 @@
       if(tabId==='reportes') document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
     }
 
-    function guardarEnHistorial(folio, fecha, comprador, total, imgData, productos) {
-      let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
-      // Limite ampliado a 30 notas, pero si falla por memoria, recorta
-      historial.unshift({ folio, fecha, comprador, total, imgData, isoDate: new Date().toISOString(), productos: productos });
-      if (historial.length > 50) historial = historial.slice(0, 50);
-      try { localStorage.setItem('historialVentasImg', JSON.stringify(historial)); } 
-      catch(e) {
-          alert("La memoria está muy llena. Se recortará el historial más antiguo.");
-          historial = historial.slice(0, 10);
-          localStorage.setItem('historialVentasImg', JSON.stringify(historial));
-      }
+    async function guardarEnHistorial(folio, fecha, comprador, total, imgData, productos) {
+      let nuevaVenta = {
+          folio, fecha, comprador, total, imgData, 
+          isoDate: new Date().toISOString(), 
+          productos: productos
+      };
+      await dbHelper.save(nuevaVenta);
     }
 
-    function renderHistorial() {
+    async function renderHistorial() {
       const filtro = document.getElementById('filtro-fecha').value; 
-      let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
+      let historial = await dbHelper.getAll();
       const lista = document.getElementById('historial-lista'); lista.innerHTML = '';
       
-      historial.forEach((venta, index) => {
+      historial.forEach((venta) => {
         const d = new Date(venta.isoDate); const pad = n => n.toString().padStart(2, '0');
         const ymd = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
         if (filtro && ymd !== filtro) return;
         
+        // Usamos isoDate como ID único (reemplazando comillas o caracteres raros para el ID HTML)
+        const safeId = venta.isoDate.replace(/[^a-zA-Z0-9]/g, '');
+
         lista.innerHTML += `
           <div class="historial-item">
             <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
@@ -404,10 +469,10 @@
             <div style="font-size: 17px;"><strong>Cliente:</strong> ${venta.comprador}</div>
             <div style="font-size: 20px; font-weight:bold; color:var(--primary); margin: 6px 0;">Total: $${venta.total}</div>
             <div style="display:flex; gap:10px;">
-                <button class="btn-secondary btn-small" style="flex:2;" onclick="toggleImagenNota(${index})">👁️ Ver Nota</button>
-                <button class="btn-danger btn-small" style="flex:1;" onclick="borrarNotaIndividual(${index})">🗑️</button>
+                <button class="btn-secondary btn-small" style="flex:2;" onclick="toggleImagenNota('${safeId}')">👁️ Ver Nota</button>
+                <button class="btn-danger btn-small" style="flex:1;" onclick="borrarNotaIndividual('${venta.isoDate}')">🗑️</button>
             </div>
-            <div id="container-img-${index}" style="display:none; text-align:center; margin-top:10px;">
+            <div id="container-img-${safeId}" style="display:none; text-align:center; margin-top:10px;">
                <img src="${venta.imgData}" class="preview-nota-img" alt="Nota">
             </div>
           </div>`;
@@ -415,45 +480,44 @@
       if(lista.innerHTML === '') lista.innerHTML = '<p style="text-align:center; color:#555;">Ninguna venta localizada.</p>';
     }
 
-    function toggleImagenNota(index) {
-      const container = document.getElementById(`container-img-${index}`);
+    function toggleImagenNota(safeId) {
+      const container = document.getElementById(`container-img-${safeId}`);
       container.style.display = container.style.display === 'none' ? 'block' : 'none';
     }
 
-    /* NUEVAS FUNCIONES DE BORRADO */
-    function borrarNotaIndividual(index) {
+    async function borrarNotaIndividual(isoDate) {
         if(confirm("¿Estás seguro de eliminar esta nota? Esta acción no se puede deshacer.")) {
-            let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
-            historial.splice(index, 1);
-            localStorage.setItem('historialVentasImg', JSON.stringify(historial));
-            renderHistorial(); checarMemoria();
+            await dbHelper.delete(isoDate);
+            renderHistorial();
         }
     }
 
-    function borrarRangoFechas() {
+    async function borrarRangoFechas() {
         const dDesde = document.getElementById('borrar-desde').value;
         const dHasta = document.getElementById('borrar-hasta').value;
         if(!dDesde || !dHasta) { alert("Selecciona ambas fechas."); return; }
 
         if(confirm("🚨 ADVERTENCIA: Se borrarán todas las notas en este rango. ¿Exportaste a Excel primero?")) {
-            let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
-            const nuevoHistorial = historial.filter(venta => {
+            let historial = await dbHelper.getAll();
+            
+            for(let venta of historial) {
                 const d = new Date(venta.isoDate); const pad = n => n.toString().padStart(2, '0');
                 const ymd = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-                // Mantener si la fecha de la nota está FUERA del rango a borrar
-                return !(ymd >= dDesde && ymd <= dHasta);
-            });
-            localStorage.setItem('historialVentasImg', JSON.stringify(nuevoHistorial));
+                
+                // Si la fecha está en el rango, la borramos
+                if(ymd >= dDesde && ymd <= dHasta) {
+                    await dbHelper.delete(venta.isoDate);
+                }
+            }
             alert("Notas eliminadas.");
-            renderHistorial(); checarMemoria();
+            renderHistorial();
         }
     }
 
-    /* NUEVA FUNCION: REPORTES */
-    function generarReporte() {
+    async function generarReporte() {
         const dDesde = document.getElementById('rep-desde').value;
         const dHasta = document.getElementById('rep-hasta').value;
-        let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
+        let historial = await dbHelper.getAll();
         
         let totalDinero = 0;
         let conteoNotas = 0;
@@ -462,7 +526,6 @@
             const d = new Date(venta.isoDate); const pad = n => n.toString().padStart(2, '0');
             const ymd = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
             
-            // Si hay filtro de fecha, validamos
             if ((!dDesde || ymd >= dDesde) && (!dHasta || ymd <= dHasta)) {
                 totalDinero += parseFloat(venta.total);
                 conteoNotas++;
@@ -474,18 +537,16 @@
         document.getElementById('resultado-reporte').style.display = 'block';
     }
 
-    /* NUEVA FUNCION: EXPORTAR A EXCEL (CSV) ESTRUCTURA DETALLADA */
-    function exportarExcel() {
-        let historial = JSON.parse(localStorage.getItem('historialVentasImg') || '[]');
+    async function exportarExcel() {
+        let historial = await dbHelper.getAll();
         if(historial.length === 0) { alert("No hay datos para exportar."); return; }
 
-        // Agregamos el BOM para que Excel lea los acentos correctamente
         let csvContent = "\uFEFFFolio,Fecha,Cliente,Concepto,Cantidad,Precio_Unitario,Subtotal_Concepto,Total_Nota\n";
 
         historial.forEach(venta => {
             const folio = venta.folio;
-            const fecha = venta.fecha.replace(/,/g, ' '); // quitar comas de la fecha
-            const cliente = venta.comprador.replace(/,/g, ''); // quitar comas
+            const fecha = venta.fecha.replace(/,/g, ' '); 
+            const cliente = venta.comprador.replace(/,/g, ''); 
             const totalNota = venta.total;
 
             if(venta.productos && venta.productos.length > 0) {
@@ -494,7 +555,6 @@
                     csvContent += `${folio},${fecha},${cliente},${concepto},${prod.cantidad},${prod.precio},${prod.subtotal},${totalNota}\n`;
                 });
             } else {
-                // Notas antiguas que no tenían el detalle guardado
                 csvContent += `${folio},${fecha},${cliente},Venta General,1,${totalNota},${totalNota},${totalNota}\n`;
             }
         });

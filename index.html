@@ -83,10 +83,27 @@
     #modal-ios p { color: var(--white); font-size: 16px; text-align: center; margin-bottom: 10px;}
     .botones-modal { display: flex; gap: 10px; width: 100%; max-width: 400px; }
     
-    /* SOLUCIÓN AL PROBLEMA DE IPHONE (min-width: 0 y box-sizing) */
-    .flex-row { display: flex; gap: 10px; align-items: flex-end; width: 100%; box-sizing: border-box; }
-    .flex-row > div { flex: 1; min-width: 0; }
-    .flex-row input[type="date"] { width: 100%; box-sizing: border-box; min-width: 0; }
+    /* SOLUCIÓN DEFINITIVA AL PROBLEMA DE IPHONE */
+    .flex-row { 
+      display: flex; 
+      gap: 10px; 
+      width: 100%; 
+      box-sizing: border-box; 
+    }
+    .flex-row > div { 
+      flex: 1 1 50%; /* Fuerza a tomar exactamente la mitad del espacio disponible */
+      min-width: 0; 
+      max-width: 50%; /* Prohíbe terminantemente que se desborde */
+      box-sizing: border-box;
+    }
+    .flex-row input[type="date"] { 
+      width: 100%; 
+      min-width: 0; 
+      max-width: 100%; 
+      box-sizing: border-box; 
+      padding: 12px 5px; /* Reducimos el espacio lateral interno para que quepa la fecha */
+      font-size: 15px; /* Letra un poco más pequeña para evitar el desbordamiento del texto */
+    }
     
     .box-reporte { background: #e3f2fd; border: 2px solid #1976d2; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center; }
   </style>

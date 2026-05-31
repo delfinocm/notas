@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legion-ventas-v1';
+const CACHE_NAME = 'legion-ventas-v2';
 const urlsToCache = [
   './',
   './index.html',

@@ -109,9 +109,12 @@
 
 	/* AJUSTE PARA EL CAMPO DE CONCEPTO */
     .fila-concepto input.input-desc {
-      font-size: 16px; /* 16px evita el zoom automático en iPhone */
-      line-height: normal; /* Permite que letras con trazo bajo como g, j, p se vean completas */
-      vertical-align: middle; /* Centrado vertical correcto */
+      font-size: 16px; 
+      line-height: 1.5; /* Fuerza un espacio vertical más grande para la fuente */
+      padding-top: 10px; /* Reduce un poco el espacio arriba */
+      padding-bottom: 14px; /* Da mayor espacio abajo para las letras g, j, p, y */
+      vertical-align: middle; 
+      box-sizing: border-box; /* Asegura que el padding no deforme la celda */
     }
   </style>
 </head>
